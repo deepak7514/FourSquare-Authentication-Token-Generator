@@ -1,0 +1,130 @@
+<head>
+	<link rel="stylesheet" href="assets/css/bootstrap.css" />
+</head>
+<?php
+	session_start();
+	function getkeys()
+	{
+		echo "
+		
+		<form class=\"form-horizontal\" method=\"post\" action=\"\">
+<fieldset>
+
+<!-- Form Name -->
+<legend style=\"text-align: center;\">FourSquare Credentials</legend>
+
+<!-- Text input-->
+<div class=\"form-group\">
+  <label class=\"col-md-4 control-label\" for=\"clientid\">Client ID</label>  
+  <div class=\"col-md-4\">
+  <input id=\"clientid\" name=\"clientid\" placeholder=\"Client ID\" class=\"form-control input-md\" required=\"\" type=\"text\">
+    
+  </div>
+</div>
+
+<!-- Text input-->
+<div class=\"form-group\">
+  <label class=\"col-md-4 control-label\" for=\"clientsecret\">Client Secret</label>  
+  <div class=\"col-md-4\">
+  <input id=\"clientsecret\" name=\"clientsecret\" placeholder=\"Client Secret\" class=\"form-control input-md\" required=\"\" type=\"text\">
+    
+  </div>
+</div>
+
+<!-- Button -->
+<div class=\"form-group\">
+  <label class=\"col-md-4 control-label\" for=\"submit\"></label>
+  <div class=\"col-md-4\">
+    <input type=\"submit\" id=\"submit\" name=\"submit\" class=\"btn btn-primary\">
+  </div>
+</div>
+
+</fieldset>
+</form>
+		
+		";
+	}
+
+	$redirect_uri = "http://deepakgoel-1156.appspot.com/foursquare_authentication_token_generator.php";
+	if(empty($_POST["clientid"]) && empty($_SESSION["clientid"]))
+	{
+		getkeys();
+		}
+	else if(!array_key_exists("code",$_GET))
+	{
+		$client_key=$_POST["clientid"];
+		$client_secret=$_POST["clientsecret"];
+		$_SESSION["clientid"]=$client_key;
+		$_SESSION["clientsecret"]=$client_secret;
+		echo "<a href='https://foursquare.com/oauth2/authenticate?client_id=".$client_key."&response_type=code&redirect_uri=".$redirect_uri."'>Connect to this app via Foursquare</a>";
+		}
+	else
+	{
+		$client_key=$_SESSION["clientid"];
+		$client_secret=$_SESSION["clientsecret"];
+
+		$params = array("client_id"=>$client_key,
+						"client_secret"=>$client_secret,
+						"grant_type"=>"authorization_code",
+						"redirect_uri"=>$redirect_uri,
+						"code"=>$_GET['code']);
+		$body="https://foursquare.com/oauth2/access_token?".http_build_query($params);
+
+		$opts = array('http' =>
+					array(
+						'method' => 'GET',
+						'ignore_errors' => '1'));
+
+		$context = stream_context_create($opts);
+		$stream = fopen($body, 'r', false, $context);
+
+		// actual data at $url
+		$result=stream_get_contents($stream);
+		$token=json_decode($result,true);
+		$token=$token["access_token"];
+		$_SESSION["auth_token"]=$token;
+		fclose($stream);
+		echo "
+		
+<form class=\"form-horizontal\">
+<fieldset>
+
+<!-- Form Name -->
+<legend style=\"text-align: center;\">FourSquare Credentials</legend>
+
+<!-- Text input-->
+<div class=\"form-group\">
+  <label class=\"col-md-4 control-label\" for=\"\">Client ID</label>  
+  <div class=\"col-md-4\">
+  <input id=\"\" name=\"\" value=\"".$client_key."\" class=\"form-control input-md\" type=\"text\">
+    
+  </div>
+</div>
+
+<!-- Text input-->
+<div class=\"form-group\">
+  <label class=\"col-md-4 control-label\" for=\"\">Client Secret</label>  
+  <div class=\"col-md-4\">
+  <input id=\"\" name=\"\" value=\"".$client_secret."\" class=\"form-control input-md\" type=\"text\">
+    
+  </div>
+</div>
+
+<!-- Text input-->
+<div class=\"form-group\">
+  <label class=\"col-md-4 control-label\" for=\"\">Access Token</label>  
+  <div class=\"col-md-4\">
+  <input id=\"\" name=\"\" value=\"".$token."\" class=\"form-control input-md\" type=\"text\">
+    
+  </div>
+</div>
+
+</fieldset>
+</form>
+
+		
+		";
+		
+		
+		}
+		?>
